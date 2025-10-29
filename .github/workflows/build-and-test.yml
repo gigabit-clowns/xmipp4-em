@@ -1,0 +1,114 @@
+name: Build and Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  build_with_cmake:
+    name: CMake
+    strategy:
+      matrix:
+        os:
+        - ubuntu-latest
+        compiler: 
+        - {cc: gcc, cxx: g++}
+        - {cc: clang, cxx: clang++}
+        mpi:
+        - openmpi
+
+        # TODO mpich with Clang is not working. Revisit
+        include:
+        - os: ubuntu-latest
+          compiler: {cc: gcc, cxx: g++}
+          mpi: mpich
+        - os: macos-latest
+          compiler: {cc: clang, cxx: clang++}
+          mpi: openmpi
+        - os: macos-latest
+          compiler: {cc: clang, cxx: clang++}
+          mpi: mpich
+        - os: windows-latest
+          compiler: {cc: cl, cxx: cl}
+          mpi: intelmpi
+  
+    runs-on: ${{ matrix.os }}
+    env:
+      BUILD_TYPE: Release
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+
+      - name: Install xmipp4-core
+        working-directory: ${{ github.workspace }}/../
+        run: |
+          git clone https://github.com/gigabit-clowns/xmipp4-core.git
+          cd xmipp4-core
+          git checkout tags/development
+          pip install --no-index --find-links=dist xmipp4-core
+
+      - name: Configure and build with CMake
+        uses: threeal/cmake-action@v2
+        with:
+          source-dir: ${{ github.workspace }}
+          build-dir: "${{ github.workspace }}/build"
+          c-compiler: ${{ matrix.compiler.cc }}
+          cxx-compiler: ${{ matrix.compiler.cxx }}
+          options: |
+            CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+          run-build: true
+          build-args: --config ${{ env.BUILD_TYPE }}
+
+      - name: Run tests
+        working-directory: "${{ github.workspace }}/build"
+        run: ctest -C ${{ env.BUILD_TYPE }} -T test --rerun-failed --output-on-failure
+
+  build_with_pip:
+    name: pip
+    strategy:
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+        mpi:
+        - openmpi
+        - mpich
+
+        include:
+        - os: windows-latest
+          mpi: intelmpi
+  
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+
+      - name: Install xmipp4-core
+        working-directory: ${{ github.workspace }}/../
+        run: |
+          git clone https://github.com/gigabit-clowns/xmipp4-core.git
+          cd xmipp4-core
+          git checkout tags/development
+          pip install --no-index --find-links=dist xmipp4-core
+
+      - name: Install project with pip
+        run: pip install . -v
