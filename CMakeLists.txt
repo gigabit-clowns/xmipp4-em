@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
 # Add source directory
-add_subdirectory(src)
+#add_subdirectory(src)
 
 # Only build tests if it is the main project
 if(BUILD_TESTING)
