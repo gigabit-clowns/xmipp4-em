@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Test excecutable name
+set(TESTS_NAME "${PROJECT_NAME}_unitary_tests")
+
 # Register all source and header files
 file(
 	GLOB_RECURSE 
@@ -10,37 +13,35 @@ file(
 
 # Add the test executable
 add_executable(
-	xmipp4-em-unitary-tests
+	${TESTS_NAME}
 	${TEST_SOURCES}
-	$<TARGET_OBJECTS:xmipp4-em>
 )
-target_compile_definitions(
-	xmipp4-em-unitary-tests
-	PRIVATE
-		XMIPP4_CORE_NO_EXPORTS
-)
-target_include_directories(
-	xmipp4-em-unitary-tests
-	PRIVATE 
-		${PROJECT_SOURCE_DIR}/src
+set_target_properties(
+	${TESTS_NAME} PROPERTIES 
+	CXX_STANDARD 20
 )
 target_link_libraries(
-	xmipp4-em-unitary-tests
+	${TESTS_NAME} 
 	PRIVATE 
-		xmipp4-em
-		$<TARGET_PROPERTY:xmipp4-em,LINK_LIBRARIES>
+		${PROJECT_NAME} 
 		Catch2::Catch2WithMain
 		trompeloeil::trompeloeil
 )
 
-# HACK: Required for TROMPELOEIL_COUNT() to work with MSVC
-if(MSVC)
-	target_compile_options(
-		xmipp4-em-unitary-tests
-		PRIVATE
-			/Zc:preprocessor 
+# On windows targets, copy the library to the test directory
+if(WIN32)
+	add_custom_command(TARGET ${TESTS_NAME}
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "Copy DLL file to ${CMAKE_CURRENT_BINARY_DIR} directory" VERBATIM
 	)
 endif()
 
 # Discover tests
-catch_discover_tests(xmipp4-em-unitary-tests)
+catch_discover_tests(${TESTS_NAME})
+
+# Install
+install(
+	TARGETS ${TESTS_NAME}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
