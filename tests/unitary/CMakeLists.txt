@@ -29,13 +29,14 @@ target_link_libraries(
 )
 
 # On windows targets, copy the library to the test directory
-if(WIN32)
-	add_custom_command(TARGET ${TESTS_NAME}
-		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "Copy DLL file to ${CMAKE_CURRENT_BINARY_DIR} directory" VERBATIM
-	)
-endif()
+# TODO: enable when xmipp4-em is built as shared library
+#if(WIN32)
+#	add_custom_command(TARGET ${TESTS_NAME}
+#		POST_BUILD
+#		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_BINARY_DIR}"
+#		COMMENT "Copy DLL file to ${CMAKE_CURRENT_BINARY_DIR} directory" VERBATIM
+#	)
+#endif()
 
 # Discover tests
 catch_discover_tests(${TESTS_NAME})
